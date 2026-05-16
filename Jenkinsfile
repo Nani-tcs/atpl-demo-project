@@ -9,49 +9,31 @@ pipeline {
                 checkout scm
             }
         }
-        stage('Build') {
+        stage('Find Java') {
             steps {
                 sh '''#!/bin/bash
-                    export JAVA_HOME=/opt/java/openjdk
-                    export PATH=$JAVA_HOME/bin:$PATH
-                    echo "JAVA_HOME=$JAVA_HOME"
-                    ls $JAVA_HOME/bin/java
-                    $JAVA_HOME/bin/java -version
-                    JAVA_HOME=$JAVA_HOME mvn clean package -DskipTests
+                    echo "=== Finding Java ==="
+                    find / -name "java" -type f 2>/dev/null
+                    echo "=== Current PATH ==="
+                    echo $PATH
+                    echo "=== Current JAVA_HOME ==="
+                    echo $JAVA_HOME
+                    echo "=== Which Java ==="
+                    which java || echo "java not in PATH"
                 '''
             }
         }
-        stage('Docker Build') {
+        stage('Build') {
             steps {
-                sh "docker build -t nani682/atpl-demo:1.${BUILD_NUMBER} ."
-            }
-        }
-        stage('Docker Push') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-credentials',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
-                    sh "docker push nani682/atpl-demo:1.${BUILD_NUMBER}"
-                }
-            }
-        }
-        stage('Deploy') {
-            steps {
-                sh "kubectl apply -f src/K8S/deployment.yaml"
-                sh "kubectl apply -f src/K8S/service.yaml"
-            }
-        }
-        stage('Verify') {
-            steps {
-                sh 'kubectl get pods'
+                sh '''#!/bin/bash
+                    java -version
+                    mvn clean package -DskipTests
+                '''
             }
         }
     }
     post {
-        success { echo 'Pipeline completed successfully!' }
-        failure { echo 'Pipeline failed!' }
+        success { echo 'Success!' }
+        failure { echo 'Failed!' }
     }
 }
