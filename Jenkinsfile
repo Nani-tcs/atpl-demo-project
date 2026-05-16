@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven3'    // ← Add this
+    }
+
     environment {
         DOCKER_HUB_USER = 'nani682'
         IMAGE_NAME = 'atpl-demo'
