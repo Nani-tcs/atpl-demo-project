@@ -3,10 +3,11 @@ pipeline {
 
     tools {
         maven 'Maven3'
-        jdk 'Java17'       // ← Add this
     }
 
     environment {
+        JAVA_HOME = '/opt/java/openjdk'
+        PATH = "/opt/java/openjdk/bin:${env.PATH}"
         DOCKER_HUB_USER = 'nani682'
         IMAGE_NAME = 'atpl-demo'
         IMAGE_TAG = "1.${BUILD_NUMBER}"
@@ -16,7 +17,6 @@ pipeline {
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 echo 'Checking out source code...'
@@ -27,6 +27,7 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building application with Maven...'
+                sh 'java -version'
                 sh 'mvn clean package -DskipTests'
             }
         }
@@ -75,7 +76,7 @@ pipeline {
             echo 'Pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed! Check logs above.'
+            echo 'Pipeline failed!'
         }
     }
 }
