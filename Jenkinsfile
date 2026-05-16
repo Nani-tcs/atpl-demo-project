@@ -11,9 +11,13 @@ pipeline {
         }
         stage('Build') {
             steps {
-                sh '''
-                    /opt/java/openjdk/bin/java -version
-                    JAVA_HOME=/opt/java/openjdk /var/lib/jenkins/tools/hudson.tasks.Maven_MavenInstallation/Maven3/bin/mvn clean package -DskipTests
+                sh '''#!/bin/bash
+                    export JAVA_HOME=/opt/java/openjdk
+                    export PATH=$JAVA_HOME/bin:$PATH
+                    echo "JAVA_HOME=$JAVA_HOME"
+                    ls $JAVA_HOME/bin/java
+                    $JAVA_HOME/bin/java -version
+                    JAVA_HOME=$JAVA_HOME mvn clean package -DskipTests
                 '''
             }
         }
