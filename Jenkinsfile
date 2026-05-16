@@ -1,7 +1,9 @@
 pipeline {
-    agent any
-    tools {
-        maven 'Maven3'
+    agent {
+        docker {
+            image 'maven:3.9-eclipse-temurin-17'
+            args '-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
+        }
     }
     stages {
         stage('Checkout') {
@@ -9,31 +11,43 @@ pipeline {
                 checkout scm
             }
         }
-        stage('Find Java') {
-            steps {
-                sh '''#!/bin/bash
-                    echo "=== Finding Java ==="
-                    find / -name "java" -type f 2>/dev/null
-                    echo "=== Current PATH ==="
-                    echo $PATH
-                    echo "=== Current JAVA_HOME ==="
-                    echo $JAVA_HOME
-                    echo "=== Which Java ==="
-                    which java || echo "java not in PATH"
-                '''
-            }
-        }
         stage('Build') {
             steps {
-                sh '''#!/bin/bash
-                    java -version
-                    mvn clean package -DskipTests
-                '''
+                sh 'java -version'
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+        stage('Docker Build') {
+            steps {
+                sh "docker build -t nani682/atpl-demo:1.${BUILD_NUMBER} ."
+            }
+        }
+        stage('Docker Push') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
+                    sh "docker push nani682/atpl-demo:1.${BUILD_NUMBER}"
+                }
+            }
+        }
+        stage('Deploy') {
+            steps {
+                sh "kubectl apply -f src/K8S/deployment.yaml"
+                sh "kubectl apply -f src/K8S/service.yaml"
+            }
+        }
+        stage('Verify') {
+            steps {
+                sh 'kubectl get pods'
             }
         }
     }
     post {
-        success { echo 'Success!' }
-        failure { echo 'Failed!' }
+        success { echo 'Pipeline completed successfully!' }
+        failure { echo 'Pipeline failed!' }
     }
 }
