@@ -1,82 +1,55 @@
 pipeline {
     agent any
-
     tools {
         maven 'Maven3'
     }
-
-    environment {
-        JAVA_HOME = '/opt/java/openjdk'
-        PATH = "/opt/java/openjdk/bin:${env.PATH}"
-        DOCKER_HUB_USER = 'nani682'
-        IMAGE_NAME = 'atpl-demo'
-        IMAGE_TAG = "1.${BUILD_NUMBER}"
-        DOCKER_IMAGE = "${DOCKER_HUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
-        K8S_DEPLOYMENT = 'src/K8S/deployment.yaml'
-        K8S_SERVICE = 'src/K8S/service.yaml'
-    }
-
     stages {
         stage('Checkout') {
             steps {
-                echo 'Checking out source code...'
                 checkout scm
             }
         }
-
         stage('Build') {
             steps {
-                echo 'Building application with Maven...'
-                sh 'java -version'
-                sh 'mvn clean package -DskipTests'
+                sh '''
+                    export JAVA_HOME=/opt/java/openjdk
+                    export PATH=/opt/java/openjdk/bin:$PATH
+                    java -version
+                    mvn clean package -DskipTests
+                '''
             }
         }
-
         stage('Docker Build') {
             steps {
-                echo 'Building Docker image...'
-                sh "docker build -t ${DOCKER_IMAGE} ."
+                sh "docker build -t nani682/atpl-demo:1.${BUILD_NUMBER} ."
             }
         }
-
         stage('Docker Push') {
             steps {
-                echo 'Pushing image to Docker Hub...'
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-credentials',
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
-                    sh "docker push ${DOCKER_IMAGE}"
+                    sh "docker push nani682/atpl-demo:1.${BUILD_NUMBER}"
                 }
             }
         }
-
-        stage('Deploy to Kubernetes') {
+        stage('Deploy') {
             steps {
-                echo 'Deploying to Kubernetes...'
-                sh "kubectl apply -f ${K8S_DEPLOYMENT}"
-                sh "kubectl apply -f ${K8S_SERVICE}"
-                sh "kubectl rollout status deployment/atpl-demo-deployment"
+                sh "kubectl apply -f src/K8S/deployment.yaml"
+                sh "kubectl apply -f src/K8S/service.yaml"
             }
         }
-
         stage('Verify') {
             steps {
-                echo 'Verifying deployment...'
                 sh 'kubectl get pods'
-                sh 'kubectl get services'
             }
         }
     }
-
     post {
-        success {
-            echo 'Pipeline completed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed!'
-        }
+        success { echo 'Success!' }
+        failure { echo 'Failed!' }
     }
 }
