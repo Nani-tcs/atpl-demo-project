@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven3'    // ← Add this
+        maven 'Maven3'
+        jdk 'Java17'       // ← Add this
     }
 
     environment {
@@ -72,7 +73,6 @@ pipeline {
     post {
         success {
             echo 'Pipeline completed successfully!'
-            echo 'App is live at: http://localhost/demo/'
         }
         failure {
             echo 'Pipeline failed! Check logs above.'
