@@ -12,10 +12,8 @@ pipeline {
         stage('Build') {
             steps {
                 sh '''
-                    export JAVA_HOME=/opt/java/openjdk
-                    export PATH=/opt/java/openjdk/bin:$PATH
-                    java -version
-                    mvn clean package -DskipTests
+                    /opt/java/openjdk/bin/java -version
+                    JAVA_HOME=/opt/java/openjdk /var/lib/jenkins/tools/hudson.tasks.Maven_MavenInstallation/Maven3/bin/mvn clean package -DskipTests
                 '''
             }
         }
@@ -49,7 +47,7 @@ pipeline {
         }
     }
     post {
-        success { echo 'Success!' }
-        failure { echo 'Failed!' }
+        success { echo 'Pipeline completed successfully!' }
+        failure { echo 'Pipeline failed!' }
     }
 }
