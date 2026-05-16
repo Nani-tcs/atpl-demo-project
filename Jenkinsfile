@@ -22,14 +22,14 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building application with Maven...'
-                bat 'mvn clean package -DskipTests'
+                sh 'mvn clean package -DskipTests'
             }
         }
 
         stage('Docker Build') {
             steps {
                 echo 'Building Docker image...'
-                bat "docker build -t %DOCKER_IMAGE% ."
+                sh "docker build -t ${DOCKER_IMAGE} ."
             }
         }
 
@@ -41,8 +41,8 @@ pipeline {
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
-                    bat "docker push %DOCKER_IMAGE%"
+                    sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
+                    sh "docker push ${DOCKER_IMAGE}"
                 }
             }
         }
@@ -50,17 +50,17 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 echo 'Deploying to Kubernetes...'
-                bat "kubectl apply -f %K8S_DEPLOYMENT%"
-                bat "kubectl apply -f %K8S_SERVICE%"
-                bat "kubectl rollout status deployment/atpl-demo-deployment"
+                sh "kubectl apply -f ${K8S_DEPLOYMENT}"
+                sh "kubectl apply -f ${K8S_SERVICE}"
+                sh "kubectl rollout status deployment/atpl-demo-deployment"
             }
         }
 
         stage('Verify') {
             steps {
                 echo 'Verifying deployment...'
-                bat 'kubectl get pods'
-                bat 'kubectl get services'
+                sh 'kubectl get pods'
+                sh 'kubectl get services'
             }
         }
     }
